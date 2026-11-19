@@ -1,0 +1,297 @@
+/* =====================================================================
+   Story map styles
+   Sections: colors & base · scrolling · hero · header · story boxes ·
+   footer · explorer controls · range sliders · legend · chart panel ·
+   larger chart · zoom hint · popup · phones
+   ===================================================================== */
+
+/* ---------- Colors & base ---------- */
+:root {
+  --bg: #111418;
+  --panel: rgba(20, 24, 30, 0.92);
+  --text: #e8eaed;
+  --muted: #9aa3ad;
+  --line: #2c333b;
+  --control: #1b2027;     /* buttons and dropdowns */
+  --control-on: #2a313a;  /* hovered / selected */
+  --accent: #8fb0d0;      /* links: light tint of CHPC blue */
+  --brand: #2f5274;       /* CHPC logo blue */
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+#map { position: fixed; inset: 0; }
+
+/* Shared look for every box (story steps, legend, charts). */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+
+/* Colored dot before chapter titles and explorer program names. */
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+/* ---------- Scrolling: each scroll settles on the next slide ---------- */
+/* Slides snap to the middle of the screen (where they trigger); snap-stop
+   keeps one big trackpad swipe from skipping a slide. */
+html { scroll-snap-type: y mandatory; }
+#hero { scroll-snap-align: start; }
+.step { scroll-snap-align: center; scroll-snap-stop: always; }
+.footer { scroll-snap-align: end; }
+
+/* ---------- Hero (top of page): big logo over title over subtitle ---------- */
+#hero { position: relative; z-index: 2; min-height: 100vh; padding: 0 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; pointer-events: none; }
+#hero::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: var(--hero-glow, 1);
+  background: radial-gradient(ellipse at center, rgba(17,20,24,.55) 0%, rgba(17,20,24,0) 65%); }
+.hero-logo-slot { width: 1px; margin-bottom: 28px; } /* height set from JS */
+.hero-text { max-width: 720px; text-shadow: 0 1px 12px rgba(0,0,0,.7); }
+.hero-text h1 { margin: 0 0 14px; font-size: clamp(30px, 5vw, 48px); line-height: 1.1; font-weight: 700; }
+.hero-sub { margin: 0 auto 14px; max-width: 560px; font-size: clamp(16px, 2vw, 19px); line-height: 1.5; color: #c9d0d8; }
+.byline { margin: 0; font-size: 14px; color: var(--muted); }
+/* Skip button: a pill like the click-to-zoom hint, just above "Scroll ↓". */
+.skip-btn { position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%);
+  pointer-events: auto; cursor: pointer; white-space: nowrap;
+  padding: 8px 14px; border-radius: 999px; font-size: 13px; font-family: inherit;
+  background: var(--panel); border: 1px solid var(--line); color: var(--text); }
+.skip-btn:hover { background: var(--control-on); }
+.skip-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.hero-cue { position: absolute; bottom: 28px; font-size: 13px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted); }
+
+/* ---------- Header: the hero logo shrinks into this as you scroll ---------- */
+#site-header { position: fixed; top: 0; left: 50%; z-index: 4; pointer-events: none; will-change: transform; }
+#site-header a { pointer-events: auto; display: block; }
+#site-header img { display: block; height: 44px; width: auto; filter: drop-shadow(0 1px 6px rgba(0,0,0,.6)); }
+.header-title { position: absolute; left: calc(100% + 16px); top: 50%; transform: translateY(-50%);
+  white-space: nowrap; font-size: 17px; font-weight: 600; opacity: 0;
+  padding-left: 16px; border-left: 1px solid rgba(255,255,255,.5);
+  text-shadow: 0 1px 8px rgba(0,0,0,.7); }
+
+/* ---------- Story boxes (left column) ---------- */
+#story { position: relative; z-index: 2; width: 420px; max-width: calc(100% - 32px);
+  margin-left: 40px; pointer-events: none; }
+#story .step, #story .footer { pointer-events: auto; }
+
+/* Desktop: a tinted band behind the story column. It takes the mouse, so
+   scrolling anywhere on the left scrolls the story, not the map. */
+@media (min-width: 761px) {
+  #story { pointer-events: auto; }
+  #story::before { content: ''; position: absolute; z-index: -1;
+    top: -30vh; bottom: -40px; left: -40px; right: -40px;
+    background: linear-gradient(to right, rgba(17,20,24,.3), rgba(17,20,24,.2) 80%, rgba(17,20,24,0));
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30vh);
+    mask-image: linear-gradient(to bottom, transparent, #000 30vh); }
+}
+
+.step { margin: 0 0 70vh; padding: 22px 24px; opacity: .35; transition: opacity .4s; }
+.step.active { opacity: 1; }
+.step h2 { margin: 0 0 10px; font-size: 21px; display: flex; align-items: center; gap: 10px; }
+.step h2 .swatch { width: 12px; height: 12px; }
+.step p { margin: 0; line-height: 1.6; font-size: 15.5px; }
+.step-img { margin: 0 0 14px; }
+/* Slides with a photo get a wider box (desktop), so the photo is bigger. */
+@media (min-width: 761px) {
+  .step.has-img { width: min(640px, calc(100vw - 480px)); max-width: none; }
+  /* Slides with wide: true in config.js get a wider box. */
+  .step.wide { width: min(600px, calc(100vw - 480px)); max-width: none; }
+}
+.step-img img { display: block; width: 100%; height: auto; border-radius: 6px; }
+/* Before/after photo slider. The invisible range input covers the photo,
+   so dragging anywhere on it moves the divider. */
+.compare { position: relative; overflow: hidden; border-radius: 6px; user-select: none; }
+.compare img { display: block; width: 100%; height: auto; }
+.step-img .compare img { border-radius: 0; }
+.compare .compare-before { position: absolute; inset: 0; height: 100%; object-fit: cover;
+  clip-path: inset(0 calc(100% - var(--pos)) 0 0); }
+.compare-handle { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px;
+  background: #fff; box-shadow: 0 0 6px rgba(0,0,0,.6); pointer-events: none; }
+.compare-handle::after { content: '◂ ▸'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 34px; height: 34px; border-radius: 50%; background: #fff; color: var(--brand);
+  font-size: 12px; line-height: 34px; text-align: center; white-space: nowrap; box-shadow: 0 1px 6px rgba(0,0,0,.5); }
+.compare-label { position: absolute; top: 8px; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .06em; background: rgba(17,20,24,.75); color: var(--text); pointer-events: none; }
+.compare-label.left { left: 8px; }
+.compare-label.right { right: 8px; }
+.compare input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+  opacity: 0; cursor: ew-resize; }
+.compare:focus-within .compare-handle::after { outline: 2px solid var(--accent); outline-offset: 2px; }
+.step-img figcaption { margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+
+/* ---------- Footer: logo on white, then sources ---------- */
+.footer { margin: 0 0 40px; padding: 0; overflow: hidden; font-size: 13px; color: var(--muted); }
+.footer a { color: var(--accent); }
+.brand { background: #fff; padding: 10px 24px; border-bottom: 2px solid var(--brand); }
+.brand a { display: inline-block; }
+.brand img { display: block; width: 100%; max-width: 170px; height: auto; }
+.footer-body { padding: 14px 24px 18px; }
+
+/* ---------- Explorer controls (last chapter) ---------- */
+.controls { margin-top: 16px; display: grid; gap: 12px; font-size: 14px; }
+.controls fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 0; }
+.controls legend { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.controls label { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; }
+/* "Chart by" label sits above its dropdown */
+.controls > label { display: grid; gap: 4px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.controls select { width: 100%; background: var(--control); color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px; font-size: 14px; }
+.reset-btn { justify-self: start; background: none; color: var(--accent); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+.reset-btn:hover { background: var(--control); color: var(--text); }
+.reset-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Two-handle range sliders (explorer) ---------- */
+/* Two invisible range inputs stacked on one drawn track; only the
+   handles take the mouse. --a / --b (0–1) are set from JS. */
+.range { --thumb: 16px; }
+.range-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.range-val { color: var(--text); font-size: 13px; text-transform: none; letter-spacing: 0; font-weight: 600; }
+.range-track { position: relative; height: 28px; }
+.range-track::before, .range-fill { content: ''; position: absolute; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; }
+.range-track::before { left: calc(var(--thumb) / 2); right: calc(var(--thumb) / 2); background: var(--line); }
+.range-fill { background: var(--accent);
+  left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--a, 0));
+  width: calc((100% - var(--thumb)) * (var(--b, 1) - var(--a, 0))); }
+.range input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+  background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+.range input[type=range]::-webkit-slider-runnable-track { background: none; border: 0; height: 28px; }
+.range input[type=range]::-moz-range-track { background: none; border: 0; }
+.range input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; cursor: grab;
+  width: var(--thumb); height: var(--thumb); border-radius: 50%; background: var(--text);
+  border: 2px solid var(--brand); box-shadow: 0 1px 4px rgba(0,0,0,.5);
+  margin-top: calc((28px - var(--thumb)) / 2); }
+.range input[type=range]::-moz-range-thumb { pointer-events: auto; cursor: grab;
+  width: var(--thumb); height: var(--thumb); border-radius: 50%; background: var(--text);
+  border: 2px solid var(--brand); box-shadow: 0 1px 4px rgba(0,0,0,.5); box-sizing: border-box; }
+.range input[type=range]:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent); outline-offset: 2px; }
+.range input[type=range]:focus-visible::-moz-range-thumb { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Hash marks under the track; --p (0–1) is each mark's position. */
+.range-ticks { position: relative; height: 22px; font-size: 10.5px; color: var(--muted); }
+.range-ticks .tick { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap;
+  left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--p)); padding-top: 7px; }
+.range-ticks .tick::before { content: ''; position: absolute; top: 0; left: 50%; width: 1px; height: 5px; background: var(--muted); }
+
+/* ---------- Legend (top right): program rows + zoom buttons ---------- */
+#legend { position: fixed; top: 16px; right: 16px; z-index: 3; padding: 10px 14px; font-size: 13px;
+  display: flex; align-items: flex-start; gap: 14px; }
+#legend .row { display: flex; align-items: center; gap: 8px; padding: 2px 0; transition: opacity .3s; }
+#legend .row.off { opacity: .3; }
+#legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+/* Subway row: a short striped line in a few MTA colors */
+#legend .line { width: 14px; height: 3px; border-radius: 2px; opacity: .8;
+  background: linear-gradient(to right, #ee352e 25%, #00933c 25% 50%, #0039a6 50% 75%, #fccc0a 75%); }
+#legend .note { color: var(--muted); font-size: 11.5px; margin-top: 6px; }
+/* Community districts: checkbox, then a color key while it's on */
+#legend .districts-toggle { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); cursor: pointer; }
+#legend .districts-toggle input { margin: 0; accent-color: #1d9bb0; }
+#legend .district-key { display: none; flex-wrap: wrap; gap: 2px 8px; max-width: 200px;
+  margin-top: 4px; font-size: 11px; color: var(--muted); }
+#legend.districts-shown .district-key { display: flex; }
+/* Low-density zoning: same toggle + key pattern */
+#legend .zoning-toggle input { accent-color: #9d79d9; }
+#legend .zoning-key { display: none; }
+#legend.zoning-shown .zoning-key { display: flex; }
+#legend .district-key span { display: flex; align-items: center; gap: 4px; }
+#legend .district-key i { width: 10px; height: 10px; border-radius: 2px; }
+/* Mapbox zoom buttons, restyled dark */
+#legend .mapboxgl-ctrl-group { margin: 0; flex: none; background: none; box-shadow: none;
+  border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+#legend .mapboxgl-ctrl-group button { width: 28px; height: 28px; background-color: var(--control); }
+#legend .mapboxgl-ctrl-group button + button { border-top: 1px solid var(--line); }
+#legend .mapboxgl-ctrl-group button:hover { background-color: var(--control-on); }
+#legend .mapboxgl-ctrl-icon { filter: invert(1); opacity: .85; }
+
+/* ---------- Small chart panel (bottom right) ---------- */
+#chart-panel { position: fixed; right: 16px; bottom: 16px; z-index: 3; width: 380px;
+  padding: 14px 16px; transition: opacity .4s, transform .4s; }
+.chart-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.chart-head h3 { margin: 0; font-size: 15px; }
+#chart-stats { margin: 6px 0 8px; color: var(--muted); font-size: 12.5px; }
+.chart-wrap { position: relative; height: 230px; }
+/* Units / Per Building toggle */
+.toggle { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; flex: none; }
+.toggle button { background: none; border: 0; color: var(--muted); padding: 4px 9px; font-size: 12px; cursor: pointer; }
+.toggle button.on { background: var(--control-on); color: var(--text); }
+
+/* ---------- Larger chart, right side (featureChart chapters) ---------- */
+/* Right edge, centered top to bottom; wider and taller than the small chart. */
+#feature-chart { position: fixed; z-index: 3; right: 16px; top: 50%;
+  width: min(540px, calc(100vw - 540px)); padding: 16px 20px;
+  transform: translateY(calc(-50% + 12px)); opacity: 0; pointer-events: none;
+  transition: opacity .4s, transform .4s; }
+#feature-chart h3 { margin: 0; font-size: 17px; }
+#feature-note { margin: 6px 0 10px; color: var(--muted); font-size: 12.5px; }
+.feature-wrap { position: relative; height: min(330px, 42vh); }
+/* While it's showing: fade it in and hide the small chart. */
+body.feature-on #feature-chart { opacity: 1; pointer-events: auto; transform: translateY(-50%); }
+body.feature-on #chart-panel,
+body.no-chart #chart-panel { opacity: 0; transform: translateY(12px); pointer-events: none; }
+
+/* ---------- Click-to-zoom hint (explorer) ---------- */
+#zoom-hint { position: fixed; z-index: 3; bottom: 24px; left: calc(460px + (100vw - 460px - 412px) / 2);
+  transform: translate(-50%, 8px); padding: 8px 14px; border-radius: 999px; font-size: 13px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--text);
+  opacity: 0; pointer-events: none; transition: opacity .4s, transform .4s; }
+#zoom-hint.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- "Read more" button and overlay page ---------- */
+.more-btn { margin-top: 14px; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  font-size: 13px; font-family: inherit; background: none; color: var(--accent); border: 1px solid var(--accent); }
+.more-btn:hover { background: var(--brand); border-color: var(--brand); color: var(--text); }
+.more-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: rgba(10,12,15,.75); opacity: 0; pointer-events: none; transition: opacity .3s; }
+#overlay.show { opacity: 1; pointer-events: auto; }
+html.overlay-open { overflow: hidden; }
+.overlay-box { position: relative; width: min(960px, 100%); height: min(860px, 100%); overflow-y: auto;
+  overscroll-behavior: contain; padding: 44px 56px; background: #161a20;
+  transform: translateY(12px); transition: transform .3s; }
+#overlay.show .overlay-box { transform: none; }
+.overlay-close { position: sticky; top: 0; float: right; margin: -28px -36px 0 0; width: 34px; height: 34px;
+  border-radius: 50%; border: 1px solid var(--line); background: var(--control); color: var(--text);
+  font-size: 20px; line-height: 1; cursor: pointer; }
+.overlay-close:hover { background: var(--control-on); }
+/* Text inside the overlay page */
+.overlay-body { line-height: 1.65; font-size: 15.5px; }
+.overlay-body h2 { margin: 0 0 12px; font-size: 28px; line-height: 1.2; }
+.overlay-body h3 { margin: 28px 0 8px; font-size: 18px; color: var(--accent); }
+.overlay-body p { margin: 0 0 12px; }
+.overlay-body .lede { font-size: 17px; color: #c9d0d8; }
+.overlay-body img { max-width: 100%; height: auto; border-radius: 6px; }
+.overlay-body a { color: var(--accent); }
+.overlay-body .source, .overlay-loading { margin-top: 24px; font-size: 12.5px; color: var(--muted); }
+/* Timeline: a line down the left with a dot per item */
+.overlay-body .timeline { list-style: none; margin: 8px 0 12px; padding: 0 0 0 22px; border-left: 2px solid var(--line); }
+.overlay-body .timeline li { position: relative; margin: 0 0 14px; }
+.overlay-body .timeline li::before { content: ''; position: absolute; left: -29px; top: 7px; width: 12px; height: 12px;
+  border-radius: 50%; background: #f4a261; /* 421-a orange */ border: 2px solid #161a20; }
+.overlay-body .timeline b { display: block; color: var(--text); }
+
+/* ---------- Map popup ---------- */
+.mapboxgl-popup-content { background: var(--panel); color: var(--text); font-size: 13px; line-height: 1.45;
+  border-radius: 8px; padding: 10px 12px; }
+.mapboxgl-popup-content b { font-size: 14px; }
+.mapboxgl-popup-tip { border-top-color: var(--panel) !important; border-bottom-color: var(--panel) !important; }
+.mapboxgl-popup-close-button { color: var(--muted); }
+
+/* ---------- Phones ---------- */
+@media (max-width: 760px) {
+  #story { margin: 0 auto; width: calc(100% - 32px); }
+  .hero-logo-slot { margin-bottom: 20px; }
+  .step { margin-bottom: 85vh; }
+  #legend { display: none; }
+  #chart-panel { left: 16px; right: 16px; width: auto; bottom: 12px; padding: 10px 12px; }
+  .chart-wrap { height: 150px; }
+  /* Phones: along the bottom, like the small chart */
+  #feature-chart { left: 16px; right: 16px; width: auto; top: auto; bottom: 12px; padding: 10px 12px;
+    transform: translateY(12px); }
+  body.feature-on #feature-chart { transform: none; }
+  #feature-chart h3 { font-size: 15px; }
+  .feature-wrap { height: 200px; }
+  #zoom-hint { top: 64px; bottom: auto; left: 50%; }
+  #overlay { padding: 12px; }
+  .overlay-box { padding: 28px 20px; }
+  .overlay-close { margin: -18px -10px 0 0; }
+}

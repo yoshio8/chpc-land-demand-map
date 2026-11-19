@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Where Is Affordable Housing Built in NYC?</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css" rel="stylesheet">
+  <link href="./style.css" rel="stylesheet">
+</head>
+<body>
+  <!-- Full-screen map behind everything -->
+  <div id="map"></div>
+
+  <!-- Legend and zoom buttons (top right), filled in by story.js -->
+  <div id="legend" class="panel"></div>
+
+  <!-- Small chart (bottom right) -->
+  <div id="chart-panel" class="panel">
+    <div class="chart-head">
+      <h3 id="chart-title"></h3>
+      <div class="toggle" id="metric-toggle">
+        <button data-metric="units">Units</button>
+        <button data-metric="perbuilding" title="Median Units per Building">Per Building</button>
+      </div>
+    </div>
+    <p id="chart-stats"></p>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  </div>
+
+  <!-- Larger chart (bottom right), shown on chapters with featureChart -->
+  <div id="feature-chart" class="panel">
+    <h3 id="feature-title"></h3>
+    <p id="feature-note"></p>
+    <div class="feature-wrap"><canvas id="feature-canvas"></canvas></div>
+  </div>
+
+  <!-- Story chapters, built from config.js -->
+  <div id="story"></div>
+
+  <!-- Libraries, then the story settings, then the story engine -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="./config.js"></script>
+  <script src="./story.js"></script>
+</body>
+</html>

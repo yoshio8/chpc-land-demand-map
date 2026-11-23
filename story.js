@@ -108,7 +108,11 @@ var navControl = new mapboxgl.NavigationControl({ showCompass: false });
 // Keep the header from covering the top of the map: camera centers are
 // measured within the area below it.
 function headerHeight() { return window.innerWidth <= 760 ? 60 : 80; }
-map.setPadding({ top: headerHeight(), bottom: 0, left: 0, right: 0 });
+// Phones: the text sheet covers up to the bottom 45% of the screen (see
+// style.css), so the camera centers the map in the open area above it.
+function isPhone() { return window.innerWidth <= 760; }
+function sheetHeight() { return isPhone() ? Math.round(window.innerHeight * 0.45) : 0; }
+map.setPadding({ top: headerHeight(), bottom: sheetHeight(), left: 0, right: 0 });
 
 // Rough outline of NYC. Basemap labels outside it are hidden.
 var NYC_OUTLINE = { type: 'Polygon', coordinates: [[
@@ -986,7 +990,13 @@ function render(ch, moveCamera) {
   document.body.classList.toggle('no-chart', !ch.featureChart && !ch.chart && !ch.explore);
   if (ch.featureChart) updateFeatureChart(ch.featureChart);
   else if (ch.chart || ch.explore) updateChart(ch, s);
-  if (moveCamera) map.flyTo(Object.assign({ duration: 2200, essential: true }, ch.location, focusCamera(ch)));
+  if (moveCamera) {
+    var loc = Object.assign({}, ch.location);
+    // Phones: the open map area is small, so zoom out a little to fit the
+    // same view (e.g. the whole city).
+    if (isPhone()) loc.zoom = ch.location.zoom - 0.8;
+    map.flyTo(Object.assign({ duration: 2200, essential: true }, loc, focusCamera(ch)));
+  }
 }
 
 // Focus slides: put the building halfway between the right edge of the
@@ -995,8 +1005,13 @@ function render(ch, moveCamera) {
 // The top padding always keeps the camera clear of the header.
 var focusPoints = {}; // address -> [lng, lat], filled when the data loads
 function focusCamera(ch) {
-  var none = { padding: { top: headerHeight(), bottom: 0, left: 0, right: 0 } };
-  if (!ch.focus || window.innerWidth <= 760) return none; // phones: box sits over the map
+  var none = { padding: { top: headerHeight(), bottom: sheetHeight(), left: 0, right: 0 } };
+  if (isPhone()) {
+    // Phones: center the focus building in the open area above the sheet.
+    if (ch.focus && focusPoints[ch.focus]) none.center = focusPoints[ch.focus];
+    return none;
+  }
+  if (!ch.focus) return none;
   var box = document.getElementById(ch.id).getBoundingClientRect();
   var left = Math.max(0, box.right);
   var right = 396; // chart panel: 380px wide + 16px from the screen edge
@@ -1086,6 +1101,28 @@ wireCompare();
 wireOverlay();
 buildLegend();
 wireExplore();
+
+// Phones: a "Chart" button shows or hides the chart (hidden by default so
+// it doesn't cover the map). Hidden on desktop by style.css.
+var chartBtn = document.createElement('button');
+chartBtn.id = 'chart-btn';
+chartBtn.type = 'button';
+chartBtn.textContent = 'Show chart';
+chartBtn.setAttribute('aria-pressed', 'false');
+chartBtn.addEventListener('click', function () {
+  var open = document.body.classList.toggle('chart-open');
+  chartBtn.textContent = open ? 'Hide chart' : 'Show chart';
+  chartBtn.setAttribute('aria-pressed', String(open));
+});
+document.body.appendChild(chartBtn);
+// Hide the button while the title screen is showing.
+function updateOnHero() {
+  var hero = document.getElementById('hero');
+  document.body.classList.toggle('on-hero', !!hero && hero.getBoundingClientRect().bottom > window.innerHeight * 0.5);
+}
+window.addEventListener('scroll', function () { requestAnimationFrame(updateOnHero); }, { passive: true });
+updateOnHero();
+
 document.querySelectorAll('#metric-toggle button').forEach(function (b) {
   b.addEventListener('click', function () { metricOverride = b.dataset.metric; if (current) render(current, false); });
 });
@@ -1151,12 +1188,13 @@ Promise.all([dataReady, mapReady, districtsReady]).then(function (out) {
   addFocusRing();
   addPopups();
 
-  // A chapter starts when its box crosses the middle of the screen.
+  // A chapter starts when its box crosses the middle of the screen
+  // (phones: a line 85% down, since the boxes rest at the bottom).
   var observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) {
       if (e.isIntersecting) activate(config.chapters.find(function (c) { return c.id === e.target.id; }));
     });
-  }, { rootMargin: '-50% 0px -50% 0px' });
+  }, { rootMargin: isPhone() ? '-85% 0px -15% 0px' : '-50% 0px -50% 0px' });
   document.querySelectorAll('.step').forEach(function (el) { observer.observe(el); });
   activate(config.chapters[0]);
 }).catch(function (err) {

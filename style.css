@@ -276,18 +276,37 @@ html.overlay-open { overflow: hidden; }
 .mapboxgl-popup-tip { border-top-color: var(--panel) !important; border-bottom-color: var(--panel) !important; }
 .mapboxgl-popup-close-button { color: var(--muted); }
 
+/* Chart button: phones only (see below). */
+#chart-btn { display: none; }
+
 /* ---------- Phones ---------- */
+/* Each slide is a sheet resting at the bottom of the screen, at most 45%
+   of its height (longer text scrolls inside the sheet), so the map stays
+   visible above it. Charts open from the "Chart" button instead of sitting
+   over the map. story.js keeps the map centered in the open area. */
 @media (max-width: 760px) {
-  #story { margin: 0 auto; width: calc(100% - 32px); }
+  html { scroll-padding-bottom: 12px; }
+  #story { margin: 0 auto; width: calc(100% - 24px); max-width: none; }
   .hero-logo-slot { margin-bottom: 20px; }
-  .step { margin-bottom: 85vh; }
+  .step { margin-bottom: 85vh; scroll-snap-align: end; max-height: 45vh; overflow-y: auto;
+    overscroll-behavior: contain; padding: 16px 18px; }
+  .step h2 { font-size: 18px; margin-bottom: 8px; }
+  .step p { font-size: 14.5px; line-height: 1.5; }
+  .step-img > img { max-height: 22vh; object-fit: cover; }
   #legend { display: none; }
-  #chart-panel { left: 16px; right: 16px; width: auto; bottom: 12px; padding: 10px 12px; }
+  #chart-btn { display: block; position: fixed; z-index: 5; top: 14px; right: 12px;
+    padding: 6px 12px; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--line); color: var(--text);
+    transition: opacity .4s; }
+  body.no-chart #chart-btn, body.on-hero #chart-btn { opacity: 0; pointer-events: none; }
+  /* Charts drop down from the top when the button is on. */
+  #chart-panel { left: 12px; right: 12px; width: auto; top: 60px; bottom: auto; padding: 10px 12px; }
   .chart-wrap { height: 150px; }
-  /* Phones: along the bottom, like the small chart */
-  #feature-chart { left: 16px; right: 16px; width: auto; top: auto; bottom: 12px; padding: 10px 12px;
-    transform: translateY(12px); }
+  #feature-chart { left: 12px; right: 12px; width: auto; top: 60px; bottom: auto; padding: 10px 12px;
+    transform: translateY(-12px); }
   body.feature-on #feature-chart { transform: none; }
+  body:not(.chart-open) #chart-panel,
+  body:not(.chart-open) #feature-chart { opacity: 0; transform: translateY(-12px); pointer-events: none; }
   #feature-chart h3 { font-size: 15px; }
   .feature-wrap { height: 200px; }
   #zoom-hint { top: 64px; bottom: auto; left: 50%; }

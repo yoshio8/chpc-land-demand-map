@@ -280,16 +280,18 @@ html.overlay-open { overflow: hidden; }
 #chart-btn { display: none; }
 
 /* ---------- Phones ---------- */
-/* Each slide is a sheet resting at the bottom of the screen, at most 45%
-   of its height (longer text scrolls inside the sheet), so the map stays
-   visible above it. Charts open from the "Chart" button instead of sitting
-   over the map. story.js keeps the map centered in the open area. */
+/* Swiping anywhere scrolls the whole page (no snapping); the map ignores
+   touches until the explorer slide (body.map-live, set in story.js), so it
+   never steals a swipe. Slides scroll up from the bottom, with a screen of
+   map between them. Charts open from the "Chart" button instead of
+   sitting over the map. story.js keeps the map centered above the text. */
 @media (max-width: 760px) {
-  html { scroll-padding-bottom: 12px; }
+  html { scroll-snap-type: none; }
+  #map { pointer-events: none; }
+  body.map-live #map { pointer-events: auto; }
   #story { margin: 0 auto; width: calc(100% - 24px); max-width: none; }
   .hero-logo-slot { margin-bottom: 20px; }
-  .step { margin-bottom: 85vh; scroll-snap-align: end; max-height: 45vh; overflow-y: auto;
-    overscroll-behavior: contain; padding: 16px 18px; }
+  .step { margin-bottom: 85vh; padding: 16px 18px; }
   .step h2 { font-size: 18px; margin-bottom: 8px; }
   .step p { font-size: 14.5px; line-height: 1.5; }
   .step-img > img { max-height: 22vh; object-fit: cover; }
@@ -309,7 +311,7 @@ html.overlay-open { overflow: hidden; }
   body:not(.chart-open) #feature-chart { opacity: 0; transform: translateY(-12px); pointer-events: none; }
   #feature-chart h3 { font-size: 15px; }
   .feature-wrap { height: 200px; }
-  #zoom-hint { top: 64px; bottom: auto; left: 50%; }
+  #zoom-hint { display: none; } /* pinch-zoom always works on phones */
   #overlay { padding: 12px; }
   .overlay-box { padding: 28px 20px; }
   .overlay-close { margin: -18px -10px 0 0; }

@@ -1028,6 +1028,8 @@ function activate(ch) {
   current = ch;
   metricOverride = null;
   document.querySelectorAll('.step').forEach(function (el) { el.classList.toggle('active', el.id === ch.id); });
+  // Phones: the map only takes touches on the explorer (see style.css).
+  document.body.classList.toggle('map-live', !!ch.explore);
   setZoomLock(true);
   setDistricts(!!ch.districts); // each slide starts with its own setting
   zoningOn = !!ch.zoning; // set before render so the chart picks it up
@@ -1189,7 +1191,7 @@ Promise.all([dataReady, mapReady, districtsReady]).then(function (out) {
   addPopups();
 
   // A chapter starts when its box crosses the middle of the screen
-  // (phones: a line 85% down, since the boxes rest at the bottom).
+  // (phones: a line 85% down, as soon as the box scrolls into view).
   var observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) {
       if (e.isIntersecting) activate(config.chapters.find(function (c) { return c.id === e.target.id; }));

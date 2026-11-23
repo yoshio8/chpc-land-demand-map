@@ -10,7 +10,7 @@
 //                  (use instead of image; imageCaption still works)
 //   focus:    an address to circle on the map
 //   districts: true to shade community districts by total new units
-//   zoning:   true to shade low-density R1–R4 zoning districts (MapPLUTO)
+//   zoning:   true to shade low-density R1–R3 zoning districts (MapPLUTO)
 //   dots:     false to hide the building dots on this slide
 //   wide:     true for a wider text box (like the overview)
 //   more:     { label, page } a button that opens an HTML page (e.g. in
@@ -50,12 +50,13 @@ var config = {
   subwayRoutesUrl: './data/nyc-subway-routes.geojson',
   subwayStopsUrl: './data/nyc-subway-stops.geojson',
   // Community districts shaded by total new units. Readers can switch it on
-  // in the legend; add districts: true to a chapter to show it on that
-  // slide. Set to '' to remove it.
+  // under "Map layers" in the explorer; add districts: true to a chapter to
+  // show it on that slide. Set to '' to remove it.
   districtsUrl: './data/NYC_Community_Districts_-8632813462877227078.geojson',
-  // Low-density (R1–R4) zoning, built from MapPLUTO 26v3 by
-  // data/build_low_density_zoning.py. Shown on slides with zoning: true;
-  // readers can also switch it on in the legend. Set to '' to remove it.
+  // Low-density (R1–R3) zoning, built from MapPLUTO 26v3.
+  // Shown on slides with zoning: true;
+  // readers can also switch it on under "Map layers" in the explorer.
+  // Set to '' to remove it.
   zoningUrl: './data/low-density-zoning.geojson',
 
   // Branding. headerLogo is the white logo that shrinks into the header as

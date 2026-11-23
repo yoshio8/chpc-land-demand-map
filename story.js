@@ -391,6 +391,7 @@ function exploreControls() {
       return '<label><input type="checkbox" name="prog" value="' + p + '" checked> ' +
         '<span class="swatch" style="background:' + COLORS[p] + '"></span>' + LABELS[p] + '</label>';
     }).join('') + '</fieldset>' +
+    layerControlsHTML() +
     rangeSliderHTML('size-range', 'Building size (units)') +
     rangeSliderHTML('year-range', 'Permit year') +
     '<label>Chart by<select id="groupby">' +
@@ -399,6 +400,14 @@ function exploreControls() {
     '</select></label>' +
     '<button type="button" id="explore-reset" class="reset-btn">Reset</button>' +
     '</div>';
+}
+
+// "Map layers" checkboxes: community districts and low-density zoning
+// (each only if its file is set in config.js).
+function layerControlsHTML() {
+  var rows = (config.districtsUrl ? '<label><input type="checkbox" name="layer" id="districts-on"> Units by community district</label>' : '') +
+    (config.zoningUrl ? '<label><input type="checkbox" name="layer" id="zoning-on"> Low-density zoning (R1–R3)</label>' : '');
+  return rows ? '<fieldset><legend>Map layers</legend>' + rows + '</fieldset>' : '';
 }
 
 // Redraw the explorer. Slider drags wait 120ms so the map isn't
@@ -421,6 +430,12 @@ function wireExplore() {
       refreshExplore();
     });
   });
+
+  // Map layer checkboxes
+  var dbox = document.getElementById('districts-on');
+  if (dbox) dbox.addEventListener('change', function () { setDistricts(dbox.checked); });
+  var zbox = document.getElementById('zoning-on');
+  if (zbox) zbox.addEventListener('change', function () { setZoning(zbox.checked); });
 
   // Building size slider (the permit year slider is wired once data loads)
   wireRange('size-range', {
@@ -453,6 +468,8 @@ function wireExplore() {
     if (ranges['year-range']) ranges['year-range'].set(YEARS.min, YEARS.max);
     exploreState.groupBy = 'boro_name';
     document.getElementById('groupby').value = 'boro_name';
+    setDistricts(false);
+    setZoning(false);
     metricOverride = null;
     refreshExplore();
   });
@@ -511,25 +528,22 @@ function buildLegend() {
     (config.districtsUrl ? districtLegendHTML() : '') +
     (config.zoningUrl ? zoningLegendHTML() : '') + '</div>';
   legend.appendChild(navControl.onAdd(map));
-  var box = document.getElementById('districts-on');
-  if (box) box.addEventListener('change', function () { setDistricts(box.checked); });
-  var zbox = document.getElementById('zoning-on');
-  if (zbox) zbox.addEventListener('change', function () { setZoning(zbox.checked); });
 }
+// Layer keys: a title and colors, shown only while the layer is on. The
+// on/off checkboxes live in the explorer (exploreControls).
 function zoningLegendHTML() {
-  return '<label class="row districts-toggle zoning-toggle"><input type="checkbox" id="zoning-on"> Low-density zoning</label>' +
-    '<div class="district-key zoning-key">' + Object.keys(ZONING_COLORS).map(function (z) {
+  return '<div class="layer-key zoning-legend"><div class="row">Low-density zoning</div>' +
+    '<div class="district-key">' + Object.keys(ZONING_COLORS).map(function (z) {
       return '<span><i style="background:' + ZONING_COLORS[z] + '"></i>' + z + '</span>';
-    }).join('') + '</div>';
+    }).join('') + '</div></div>';
 }
-// Checkbox plus a color key (shown only while the layer is on).
 function districtLegendHTML() {
   var k = function (n) { return n >= 1000 ? n / 1000 + 'k' : String(n); };
-  return '<label class="row districts-toggle"><input type="checkbox" id="districts-on"> Units by community district</label>' +
+  return '<div class="layer-key districts-legend"><div class="row">Units by community district</div>' +
     '<div class="district-key">' + DISTRICT_STEPS.map(function (s, i) {
       var next = DISTRICT_STEPS[i + 1];
       return '<span><i style="background:' + s[1] + '"></i>' + (next ? k(s[0]) + '–' + k(next[0]) : k(s[0]) + '+') + '</span>';
-    }).join('') + '</div>';
+    }).join('') + '</div></div>';
 }
 // Dim the programs the current chapter isn't showing.
 function updateLegend(s) {
@@ -662,7 +676,7 @@ function updateChart(ch, s) {
   if (groupBy === 'prog') color = keys.map(function (k) { return COLORS[k] || INK.neutralBar; });
   // Neighborhood bars match their district's shade on the map.
   if (groupBy === 'cdtanamesimple') color = keys.map(function (k) { return districtColor(districtUnits[k] || 0); });
-  // Zoning bars match the R1–R4 shading when it's on; the rest are muted.
+  // Zoning bars match the R1–R3 shading when it's on; the rest are muted.
   if (groupBy === 'zone_group' && zoningOn) color = keys.map(function (k) { return ZONING_COLORS[k] || INK.mutedBar; });
   // chart.highlight: one bar name or a list of them.
   var hi = !ch.explore && ch.chart.highlight ? [].concat(ch.chart.highlight) : [];
@@ -905,11 +919,11 @@ function setDistricts(on) {
   });
 }
 
-// Low-density zoning districts (R1–R4), from MapPLUTO via
-// data/build_low_density_zoning.py. Each feature has z: 'R1'…'R4'.
+// Low-density zoning districts (R1–R3), from MapPLUTO 26v3. Each feature
+// has z: 'R1', 'R2' or 'R3'.
 // Drawn under the subway and points; off unless a slide has zoning: true
 // or the reader ticks the box in the legend. Lighter = lower density.
-var ZONING_COLORS = { R1: '#e6dcf8', R2: '#c3a8ee', R3: '#9d79d9', R4: '#7650b8' };
+var ZONING_COLORS = { R1: '#e6dcf8', R2: '#b594ea', R3: '#7f58c4' };
 var zoningOn = false;
 function addZoning() {
   if (!config.zoningUrl) return;
@@ -928,7 +942,9 @@ function setZoning(on) {
   if (box) box.checked = on;
   document.getElementById('legend').classList.toggle('zoning-shown', on);
   if (map.getLayer('zoning-fill')) map.setLayoutProperty('zoning-fill', 'visibility', on ? 'visible' : 'none');
-  if (current && current.chart && current.chart.groupBy === 'zone_group') updateChart(current, filterSpec(current));
+  // Recolor the chart if it's showing zoning districts.
+  var gb = current && (current.explore ? exploreState.groupBy : current.chart && current.chart.groupBy);
+  if (gb === 'zone_group' && !current.featureChart) updateChart(current, filterSpec(current));
 }
 
 // Ring around a chapter's focus building (chapter.focus = its address).
@@ -1124,6 +1140,22 @@ function updateOnHero() {
 }
 window.addEventListener('scroll', function () { requestAnimationFrame(updateOnHero); }, { passive: true });
 updateOnHero();
+
+// Phones: long text boxes scroll inside themselves (style.css). Fade the
+// bottom edge while there's more text below, so readers know to keep going.
+function updateMoreBelow(el) {
+  el.classList.toggle('more-below', el.scrollHeight - el.clientHeight - el.scrollTop > 4);
+}
+document.querySelectorAll('.step').forEach(function (el) {
+  el.addEventListener('scroll', function () { updateMoreBelow(el); }, { passive: true });
+  updateMoreBelow(el);
+});
+window.addEventListener('resize', function () {
+  document.querySelectorAll('.step').forEach(updateMoreBelow);
+});
+window.addEventListener('load', function () {
+  document.querySelectorAll('.step').forEach(updateMoreBelow); // after photos load
+});
 
 document.querySelectorAll('#metric-toggle button').forEach(function (b) {
   b.addEventListener('click', function () { metricOverride = b.dataset.metric; if (current) render(current, false); });
